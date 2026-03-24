@@ -2,7 +2,7 @@
 <html lang="ko" class="h-full">
  <head>
   <meta charset="UTF-8">
-  <title>가덕초등학교 2학년 차임벨 시계</title>
+  <title>가덕초등학교 2학년 시계</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -51,7 +51,7 @@
  <body class="w-full h-full m-0 p-0 bg-[#f6f1e9]">
   <div id="app-root" class="w-full h-full overflow-hidden flex">
    
-   <div id="clock-section" class="w-1/2 h-full overflow-auto p-6 bg-[#1b2845]">
+   <div id="clock-section" class="w-2/5 h-full overflow-auto p-6 bg-[#1b2845]">
     <main class="w-full max-w-2xl mx-auto bg-[#f6f1e9] rounded-3xl shadow-2xl p-6 flex flex-col gap-4">
      
      <section class="bg-gradient-to-br from-[#1b2845] to-[#2d3e5f] rounded-2xl p-6 text-center" aria-label="현재 상태">
@@ -269,7 +269,7 @@
     </main>
    </div>
 
-   <div id="memo-section" class="w-1/2 h-full flex flex-col">
+   <div id="memo-section" class="w-3/5 h-full flex flex-col">
     <div id="memo-container" class="bg-white h-full flex flex-col transition-colors">
      <div class="flex items-center justify-between p-6 pb-4">
       <h2 id="memo-title" class="text-3xl font-bold text-[#1b2845]">📝 오늘의 메모</h2><button id="memo-settings-btn" class="px-4 py-2 rounded-full bg-[#3a6ea5] text-white font-semibold hover:bg-[#335f8e] transition-colors"> ⚙️ 설정 </button>
@@ -366,21 +366,67 @@
     const minuteHand = document.getElementById("minute-hand");
     const secondHand = document.getElementById("second-hand");
 
-    // ===== 우측 메모장 기능 =====
+    // ===== 우측 메모장 기능 (기억력 완벽 복구!) =====
     const memoTextarea = document.getElementById('memo-textarea');
-    function applyMemoFont(font) { memoTextarea.style.fontFamily = font === 'Noto Sans KR' ? "'Noto Sans KR', sans-serif" : `"${font}", 'Noto Sans KR', sans-serif`; }
-    document.getElementById('memo-font-select').addEventListener('change', (e) => applyMemoFont(e.target.value));
+    
+    function applyMemoFont(font) { 
+      memoTextarea.style.fontFamily = font === 'Noto Sans KR' ? "'Noto Sans KR', sans-serif" : `"${font}", 'Noto Sans KR', sans-serif`; 
+    }
+
+    // 1. 설정 바꿀 때마다 컴퓨터에 기억시키기
+    document.getElementById('memo-font-select').addEventListener('change', (e) => {
+      applyMemoFont(e.target.value);
+      localStorage.setItem('memoFont', e.target.value);
+    });
+
     document.getElementById('memo-font-size-slider').addEventListener('input', (e) => {
       memoTextarea.style.fontSize = `${e.target.value}px`;
       document.getElementById('memo-font-size-value').textContent = e.target.value;
+      localStorage.setItem('memoFontSize', e.target.value);
     });
     
-    // 메모장 글씨, 배경 색상 자바스크립트 복구
-    document.getElementById('memo-text-color').addEventListener('input', (e) => memoTextarea.style.color = e.target.value);
+    document.getElementById('memo-text-color').addEventListener('input', (e) => {
+      memoTextarea.style.color = e.target.value;
+      localStorage.setItem('memoTextColor', e.target.value);
+    });
+
     document.getElementById('memo-bg-color').addEventListener('input', (e) => {
       document.getElementById('memo-container').style.backgroundColor = e.target.value;
+      localStorage.setItem('memoBgColor', e.target.value);
     });
-    
+
+    // 글씨 쓸 때마다 내용 기억시키기
+    memoTextarea.addEventListener('input', () => {
+      localStorage.setItem('schoolMemo', memoTextarea.value);
+    });
+
+    // 2. 처음 켰을 때 기억해둔 설정 불러오기
+    function loadMemoSettings() {
+      const savedMemo = localStorage.getItem('schoolMemo');
+      if (savedMemo) memoTextarea.value = savedMemo;
+
+      const savedFont = localStorage.getItem('memoFont') || 'Noto Sans KR';
+      document.getElementById('memo-font-select').value = savedFont;
+      applyMemoFont(savedFont);
+
+      const savedFontSize = localStorage.getItem('memoFontSize') || '24';
+      document.getElementById('memo-font-size-slider').value = savedFontSize;
+      document.getElementById('memo-font-size-value').textContent = savedFontSize;
+      memoTextarea.style.fontSize = `${savedFontSize}px`;
+
+      const savedTextColor = localStorage.getItem('memoTextColor') || '#1b2845';
+      document.getElementById('memo-text-color').value = savedTextColor;
+      memoTextarea.style.color = savedTextColor;
+
+      const savedBgColor = localStorage.getItem('memoBgColor') || '#ffffff';
+      document.getElementById('memo-bg-color').value = savedBgColor;
+      document.getElementById('memo-container').style.backgroundColor = savedBgColor;
+    }
+
+    // 창이 열릴 때 불러오기 함수 바로 실행!
+    loadMemoSettings();
+
+    // 설정창 열고 닫기
     document.getElementById('memo-settings-btn').addEventListener('click', () => document.getElementById('memo-settings-panel').classList.remove('hidden'));
     document.getElementById('memo-settings-close').addEventListener('click', () => document.getElementById('memo-settings-panel').classList.add('hidden'));
     document.getElementById('memo-settings-apply').addEventListener('click', () => document.getElementById('memo-settings-panel').classList.add('hidden'));
@@ -606,6 +652,20 @@
     document.getElementById('meal-next-day').addEventListener('click', () => { currentMealDate.setDate(currentMealDate.getDate()+1); loadMeal(currentMealDate); });
     document.getElementById('meal-today').addEventListener('click', () => { currentMealDate = new Date(); loadMeal(currentMealDate); });
 
+    // ===== ⏳ 쉬는시간 1분 전 알림 기능 복구 =====
+    function checkOneMinuteWarning(totalMin, segments) {
+      for (const seg of segments) {
+        // 지금이 쉬는시간이고, 끝나는 시간 딱 1분 전일 때!
+        if (seg.type === 'break' && totalMin === seg.end - 1) {
+          const warningKey = `${seg.id}_1min`;
+          if (lastOneMinuteWarning !== warningKey) {
+            lastOneMinuteWarning = warningKey;
+            speak('쉬는 시간 1분 전입니다. 자리에 앉아 수업을 준비해 주세요.');
+          }
+        }
+      }
+    }
+
     // ===== ⚙️ 메인 루프 (시계 바늘 & 차임벨 작동) =====
     let lastActiveSegmentId = null;
     function updateLoop() {
@@ -618,6 +678,10 @@
       else timeDisplay.classList.add('hidden');
 
       if (!scheduleSegments.length) return;
+      
+      // 1분 전 알림 마법사 부르기!
+      checkOneMinuteWarning(tMin, scheduleSegments);
+
       const activeSeg = scheduleSegments.find(seg => tMin >= seg.start && tMin < seg.end);
       
       if (activeSeg) {
